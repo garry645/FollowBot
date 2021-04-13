@@ -15,18 +15,19 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import com.google.mlkit.vision.common.InputImage
+import com.google.mlkit.vision.objects.DetectedObject
 import com.google.mlkit.vision.objects.ObjectDetection
-import com.google.mlkit.vision.objects.ObjectDetector
 import com.google.mlkit.vision.objects.ObjectDetectorOptionsBase.STREAM_MODE
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
-import kotlinx.android.synthetic.main.camera_activity.*
 import java.io.File
 import java.io.IOException
+import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import java.util.jar.Manifest
+
+typealias LumaListener = (detectedObjects: MutableList<DetectedObject>) -> Unit
 
 class CameraActivity : AppCompatActivity() {
 
@@ -76,12 +77,9 @@ class CameraActivity : AppCompatActivity() {
 
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     val savedUri = Uri.fromFile(photoFile)
-                    val msg = "Photo capture succeeded: $savedUri"
-                    val options = ObjectDetectorOptions.Builder()
-                        .setDetectorMode(STREAM_MODE)
-                        .build()
 
-                    val objectDetector = ObjectDetection.getClient(options)
+                    val msg = "Photo capture succeeded: $savedUri"
+
                     var image: InputImage? = null
 
                     try {
@@ -89,32 +87,9 @@ class CameraActivity : AppCompatActivity() {
                     } catch (e: IOException) {
                         e.printStackTrace()
                     }
-                    /*val imageAnalyzer = ImageAnalysis.Builder()
-                        .build()
-                        .also {
-                            it.setAnalyzer(cameraExecutor, BallImageAnalyzer() )
-                       }*/
 
-                    val imageAnalyzer = BallImageAnalyzer()
-
-
-                    BallImageAnalyzer.
                     image?.let {
-                        objectDetector.process(image)
-                            .addOnSuccessListener { detectedObjects ->
-                                //send data to bot
-                                if(detectedObjects.size > 0) {
-                                    Toast.makeText(
-                                        applicationContext,
-                                        "Detected: ${detectedObjects[0].labels}",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
-                                Log.e(TAG, detectedObjects.toString())
-                            }
-                            .addOnFailureListener {
-                                //do nothing (silent fail)
-                            }
+
                     }
                     Toast.makeText(baseContext, msg, Toast.LENGTH_SHORT).show()
                     Log.d(TAG, msg)
@@ -128,6 +103,10 @@ class CameraActivity : AppCompatActivity() {
         cameraProviderFuture.addListener( {
             // Used to bind the lifecycle of cameras to the lifecycle owner
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+            var myString: String? = null
+            if (myString != null) {
+                Log.d(TAG, myString)
+            }
 
             val viewFinder = findViewById<PreviewView>(R.id.viewFinder)
             // Preview
@@ -143,7 +122,13 @@ class CameraActivity : AppCompatActivity() {
             imageCapture = ImageCapture.Builder()
                 .build()
 
-
+            val imageAnalyzer = ImageAnalysis.Builder()
+                .build()
+                .also {
+                    it.setAnalyzer(cameraExecutor, BallImageAnalyzer { detectedObjects ->
+                        Log.d(TAG, "Detected Objects: $detectedObjects")
+                    })
+                }
 
             try {
                 // Unbind use cases before rebinding
@@ -151,7 +136,7 @@ class CameraActivity : AppCompatActivity() {
 
                 // Bind use cases to camera
                 cameraProvider.bindToLifecycle(
-                    this, cameraSelector, preview, imageCapture)
+                    this, cameraSelector, preview, imageCapture, imageAnalyzer)
 
             } catch(exc: Exception) {
                 Log.e(TAG, "Use case binding failed", exc)
@@ -180,21 +165,50 @@ class CameraActivity : AppCompatActivity() {
         private const val FILENAME_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
     }
 
-    private class BallImageAnalyzer : ImageAnalysis.Analyzer {
+    private class BallImageAnalyzer(private val listener: LumaListener) : ImageAnalysis.Analyzer {
+
+        val options = ObjectDetectorOptions.Builder()
+            .setDetectorMode(STREAM_MODE)
+            .build()
+
+        val objectDetector = ObjectDetection.getClient(options)
+
+        private fun ByteBuffer.toByteArray(): ByteArray {
+            rewind()    // Rewind the buffer to zero
+            val data = ByteArray(remaining())
+            get(data)   // Copy the buffer into a byte array
+            return data // Return the byte array
+        }
 
         @SuppressLint("UnsafeExperimentalUsageError")
-        @RequiresApi(Build.VERSION_CODES.KITKAT)
         override fun analyze(imageProxy: ImageProxy) {
-            var mediaImage: Image? = null
             imageProxy.image?.let {
-                mediaImage = it
-            }
+                val mediaImage = it
+                val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
+                objectDetector.process(image)
+                    .addOnSuccessListener { detectedObjects ->
+                        //send data to bot
+                        /*if(detectedObjects.size > 0) {
+                            Toast.makeText(
+                                ,
+                                "Detected: ${detectedObjects[0].labels}",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }*/
+                        Log.e(TAG, detectedObjects.toString())
+                        listener(detectedObjects)
+                    }
+                    .addOnFailureListener {
+                        //do nothing (silent fail)
+                        Log.e(TAG, "Nothing detected")
+                    }
 
-            mediaImage?.let{
-                val image = InputImage.fromMediaImage(it, imageProxy.imageInfo.rotationDegrees)
-                // Pass image to an ML Kit Vision API
-                // ...
-            }
+
+                //image.close()
+            } ?: Log.e(TAG, "image null")
+
+
+
         }
     }
 }
