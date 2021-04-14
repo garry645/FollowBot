@@ -30,6 +30,9 @@ class BluetoothItemsAdapter(private val bluetoothItems: List<BluetoothDevice>, v
         bluetoothItems[position].let {
             holder.bluetoothName.text = it.name
             holder.bluetoothID.text = it.address
+            holder.deviceData1.text = it.alias
+            holder.deviceData2.text = it.uuids[0].toString()
+            holder.deviceData3.text = it.bondState.toString()
         }
         holder.itemView.setOnClickListener(onClickListener)
     }
@@ -40,6 +43,10 @@ class BluetoothItemsAdapter(private val bluetoothItems: List<BluetoothDevice>, v
 
     class BluetoothItemViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val bluetoothName: TextView = itemView.findViewById(R.id.deviceName)
-        val bluetoothID: TextView = itemView.findViewById(R.id.devideID)
+        val bluetoothID: TextView = itemView.findViewById(R.id.deviceID)
+        val deviceData1: TextView = itemView.findViewById(R.id.deviceData1)
+        val deviceData2: TextView = itemView.findViewById(R.id.deviceData2)
+        val deviceData3: TextView = itemView.findViewById(R.id.deviceData3)
+
     }
 }

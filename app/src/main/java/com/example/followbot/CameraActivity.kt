@@ -1,7 +1,8 @@
 package com.example.followbot
 
 import android.annotation.SuppressLint
-import android.media.Image
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothSocket
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -21,11 +22,11 @@ import com.google.mlkit.vision.objects.ObjectDetectorOptionsBase.STREAM_MODE
 import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
 import java.io.File
 import java.io.IOException
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.text.SimpleDateFormat
 import java.util.*
 import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
 
 typealias LumaListener = (detectedObjects: MutableList<DetectedObject>) -> Unit
 
@@ -34,25 +35,84 @@ class CameraActivity : AppCompatActivity() {
 
     private var imageCapture: ImageCapture? = null
 
-    private lateinit var outputDirectory: File
-    private lateinit var cameraExecutor: ExecutorService
+    private var outputDirectory: File? = null
+    private var cameraExecutor: ExecutorService? = null
+    private var bluetoothAdapter: BluetoothAdapter? = null
+    private var bluetoothSocket: BluetoothSocket? = null
+    private val address = "98:D3:C1:FD:AE:9A"
+    val myUUID = UUID.fromString("00001101-0000-1000-8000-00805f9b34fb")
+    private var outputStream: OutputStream? = null
 
-    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.camera_activity)
 
 
+        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
 
-        startCamera()
+        connect()
+
+        //startCamera()
 
         val cameraCaptureButton = findViewById<Button>(R.id.camera_capture_button)
-        cameraCaptureButton.setOnClickListener { takePhoto() }
+        cameraCaptureButton.setOnClickListener {
+            val x = "100.0"
+            val y = "99.0"
+            val direction = 1
+            val data = "$direction"
+            writeData(data) }
 
-        outputDirectory = getOutputDirectory()
+        //outputDirectory = getOutputDirectory()
 
-        cameraExecutor = Executors.newSingleThreadExecutor()
+        //cameraExecutor = Executors.newSingleThreadExecutor()*/
 
+    }
+
+    private fun connect() {
+        bluetoothAdapter?.let {
+            if (it.isEnabled) {
+                val device = it.getRemoteDevice(address)
+                it.cancelDiscovery()
+                try {
+                    bluetoothSocket = device.createInsecureRfcommSocketToServiceRecord(myUUID)
+
+                    bluetoothSocket?.connect()
+                    Toast.makeText(applicationContext, "Connected", Toast.LENGTH_SHORT).show()
+
+
+                    val points = "1"
+
+                } catch( e: java.lang.Exception) {
+                    try {
+                        bluetoothSocket?.close()
+                    } catch(e2: java.lang.Exception) {
+                        Toast.makeText(applicationContext, "Failed", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+            }
+        }
+    }
+
+    private fun writeData(data: String) {
+        bluetoothAdapter?.let{
+            if(it.isEnabled) {
+                try {
+                    outputStream = bluetoothSocket?.outputStream
+
+                } catch (e: java.lang.Exception) {
+                    Log.e(TAG, e.toString())
+                }
+                try{
+                    outputStream?.write(data.toByteArray())
+                    outputStream?.flush()
+                    Log.e(TAG, "Wrote data: $data")
+                } catch (e: java.lang.Exception) {
+                    Log.e(TAG, e.toString())
+                }
+            }
+
+        }
     }
 
     private fun takePhoto() {
@@ -125,9 +185,11 @@ class CameraActivity : AppCompatActivity() {
             val imageAnalyzer = ImageAnalysis.Builder()
                 .build()
                 .also {
-                    it.setAnalyzer(cameraExecutor, BallImageAnalyzer { detectedObjects ->
-                        Log.d(TAG, "Detected Objects: $detectedObjects")
-                    })
+                    cameraExecutor?.let { it1 ->
+                        it.setAnalyzer(it1, BallImageAnalyzer { detectedObjects ->
+                            Log.d(TAG, "Detected Objects: $detectedObjects")
+                        })
+                    }
                 }
 
             try {
@@ -157,7 +219,7 @@ class CameraActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        cameraExecutor.shutdown()
+        cameraExecutor?.shutdown()
     }
 
     companion object {
@@ -202,7 +264,6 @@ class CameraActivity : AppCompatActivity() {
                         //do nothing (silent fail)
                         Log.e(TAG, "Nothing detected")
                     }
-
 
                 //image.close()
             } ?: Log.e(TAG, "image null")

@@ -38,7 +38,8 @@ class MainActivity : AppCompatActivity() {
                 "In order to use FollowBot you must accept camera and bluetooth permissions",
                 0,
                 Manifest.permission.BLUETOOTH,
-                Manifest.permission.CAMERA
+                Manifest.permission.CAMERA,
+                Manifest.permission.BLUETOOTH_ADMIN
         )
     }
 }
