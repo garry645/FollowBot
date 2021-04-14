@@ -76,8 +76,13 @@ class CameraActivity : AppCompatActivity() {
                 try {
                     bluetoothSocket = device.createInsecureRfcommSocketToServiceRecord(myUUID)
 
-                    bluetoothSocket?.connect()
-                    Toast.makeText(applicationContext, "Connected", Toast.LENGTH_SHORT).show()
+                    bluetoothSocket?.let { socket ->
+                        socket.connect()
+                        if (socket.isConnected) {
+                            Toast.makeText(applicationContext, "Connected", Toast.LENGTH_SHORT)
+                                .show()
+                        }
+                    }
 
 
                     val points = "1"
@@ -104,9 +109,14 @@ class CameraActivity : AppCompatActivity() {
                     Log.e(TAG, e.toString())
                 }
                 try{
-                    outputStream?.write(data.toByteArray())
-                    outputStream?.flush()
-                    Log.e(TAG, "Wrote data: $data")
+                    outputStream?.let { stream ->
+                        stream.flush()
+                        stream.write("AT+RESET".toByteArray())
+                        stream.write(data.toByteArray())
+
+                        Log.e(TAG, "Wrote data: $data")
+                    }
+
                 } catch (e: java.lang.Exception) {
                     Log.e(TAG, e.toString())
                 }
@@ -114,6 +124,8 @@ class CameraActivity : AppCompatActivity() {
 
         }
     }
+
+
 
     private fun takePhoto() {
         val imageCapture = imageCapture ?: return

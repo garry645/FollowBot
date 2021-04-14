@@ -6,9 +6,11 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/deviceList"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+  <org.opencv.android.JavaCameraView
+      android:layout_width="match_parent"
+      android:layout_height="match_parent"
+      android:id="@+id/colorBlobDetectionActivitySurfaceView"
+      app:layout_constraintTop_toBottomOf="parent"
+      app:layout_constraintBottom_toTopOf="parent"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
