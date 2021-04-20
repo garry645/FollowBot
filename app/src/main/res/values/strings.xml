@@ -1,3 +1,6 @@
 <resources>
     <string name="app_name">FollowBot</string>
+    <string name="localizationHeader">Localization</string>
+    <string name="learnButton">Learn</string>
+    <string name="locateButton">Locate</string>
 </resources>
