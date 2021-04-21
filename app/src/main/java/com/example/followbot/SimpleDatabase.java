@@ -14,6 +14,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+/*
+Adapted From open-source DatabaseHelper, and reconfigured to fit the specs of the project
+ */
 public class SimpleDatabase extends SQLiteOpenHelper{
     public static final String DATABASE_NAME = "wifimap.db";
     public static final String AP_TABLE = "access_points";
@@ -41,8 +44,6 @@ public class SimpleDatabase extends SQLiteOpenHelper{
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
 
-       // db.execSQL("DROP TABLE IF EXISTS " + AP_CREATE);
-        //db.execSQL("DROP TABLE IF EXISTS " + READINGS_CREATE);
         onCreate(db);
     }
 

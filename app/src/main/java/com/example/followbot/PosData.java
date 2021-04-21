@@ -1,5 +1,7 @@
 package com.example.followbot;
-
+/*
+Simple class to record position data, implemented through the open-source Wifips
+ */
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,25 +42,7 @@ public class PosData implements Serializable {
         return values;
     }
 
-    public int uDistance(PosData arg,ArrayList<Router> friendlyWifis){
-        int sum=0;
-        int count=0;
-        for(Map.Entry<String, Integer> e: this.values.entrySet()){
-            int v;
-            //Log.v("Key : ",arg.values.get(e.getKey()).toString());
-            if(isFriendlyWifi(friendlyWifis,e.getKey()) && arg.values.containsKey(e.getKey()))
-            {
-                v=arg.values.get(e.getKey());
-                sum+=Math.pow((v-e.getValue()),2);
-                count++;
-            }
-        }
-        if(count<MINIMUM_COMMON_ROUTERS){
-            sum=MAX_DISTANCE;
-        }
 
-        return sum;
-    }
     private boolean isFriendlyWifi(ArrayList<Router> wifis,String bssid){
         for(int i=0;i<wifis.size();i++){
             if(wifis.get(i).getBSSID().equals(bssid))

@@ -1,5 +1,7 @@
 package com.example.followbot;
-
+/*
+Simple Router class, implemented through the open-source Wifips
+ */
 import java.io.Serializable;
 
 public class Router implements Serializable {
